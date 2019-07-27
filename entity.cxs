@@ -1,0 +1,27 @@
+Strict
+
+Import mojo
+
+Class Entity
+	Field x:Float
+	Field y:Float
+	Field velX:Float
+	Field velY:Float ' Uses vector-derivated method.
+	Field img:Image
+	
+	Method SetPosition:Void(x:Float, y:Float)
+		Self.x = x
+		Self.y = y
+	End Method
+	
+	Method SetVelocity:Void(velX:Float, velY:Float)
+		Self.velX = velX
+		Self.velY = velY
+	End Method
+	
+	Method Render:Void()
+		DrawImage(img, x, y)
+	End Method
+	
+	Method Move:Void() Abstract
+End Class

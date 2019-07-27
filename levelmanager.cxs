@@ -1,0 +1,10 @@
+Strict
+
+Import levelloader
+
+Class LevelManager
+	Private
+	Field level:Level
+
+	Method 
+End Class

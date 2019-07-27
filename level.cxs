@@ -1,0 +1,159 @@
+Strict
+
+Import shootinggame
+Import entity
+Import plane
+Import enemyplane
+Import playerplane
+Import projectile
+Import wave
+
+Class Level
+	Field name:String
+	Field playerlifes:Int
+	Field enemies:List<EnemyPlane>
+	Field player:PlayerPlane
+	Field projectiles:List<Projectile>
+	Field waves:List<Wave>
+	Field waveIndex:Int = 0
+	Field latestspawntime:Int = 0
+	' Field canvas:Canvas
+	
+	Method New(name:String, playerlifes:Int, wave:List<Wave>)
+		Self.name = name
+		Self.playerlifes = playerlifes ' When go to next level, pass this value to preserve player lifes.
+		Self.player = New PlayerPlane()
+		Self.projectiles = New List<Projectile>
+		Self.enemies = New List<EnemyPlane>
+		Self.waves = wave
+	End Method
+	
+	Method InitializeEntities:Void()
+		Seed = Millisecs()
+		player.SetPosition(DeviceWidth() / 2, DeviceHeight() * 4 / 5)
+		For Local e := Eachin enemies
+			e.SetPosition(Rnd(20, DeviceWidth() - 20), 0) ' Assuming Image's width is 40 and has rectangular hitbox.
+			e.SetVelocity(0, 1) ' This code is stub. replace with actual value.
+		Next
+	End Method
+	
+	Method Update:Void()
+		Local now:Int = Millisecs()
+		If(waveIndex < waves.Count())
+			If(now - latestspawntime >= waves.ToArray()[waveIndex].spawninterval) ' TODO:  Array Index Out Of Bound Error
+				ProceedNextWave()
+				latestspawntime = now
+			EndIf
+		Endif
+		
+		player.Move()
+		If(enemies.Count() > 0)
+			For Local e := Eachin enemies
+				e.Move()
+				If(e.CanShoot())
+					Local proj:Projectile = New Projectile(false)
+					proj.SetPosition(e.x, e.y)
+					proj.SetVelocity(0, 10) ' This code is stub; replace with actual value
+					projectiles.AddLast(proj)
+				Endif
+			Next
+		Endif
+		
+		If(KeyDown(KEY_SPACE))
+			If(player.CanShoot())
+				Local proj:Projectile = New Projectile(true)
+				proj.SetPosition(player.x, player.y)
+				proj.SetVelocity(0, -30) ' This code is stub; replace with actual value
+				projectiles.AddLast(proj)
+			Endif
+		Endif
+		
+		If(projectiles.Count() > 0)
+			For Local proj := Eachin projectiles
+				proj.Move()
+				Local removed:Bool = False
+				removed = ProcessProjectileCollision(proj)
+				
+				If(proj.IsOutOfBound() And Not removed)
+					projectiles.Remove(proj)
+				EndIf
+			Next
+		Endif
+		
+		RemoveDeadPlanes()
+	End Method
+	
+	Method Render:Void() ' TODO: How about separating rendering and updating values? 
+		' Move plane entities first(this includes enemy and player) then projectiles.
+		' Read the pre-develop documentation for further details.
+		player.Render()
+		For Local e := Eachin enemies
+			e.Render()
+		Next
+		For Local p := Eachin projectiles
+			p.Render()
+		Next		
+	End Method
+	
+	Method CanWin:Bool()
+		Return enemies.Count() < 1 And waveIndex = waves.Count()
+	End Method
+	
+	Private
+	Method ProcessProjectileCollision:Bool(proj:Projectile)
+		Local removed:Bool = False
+		If(proj.playerfired)
+			For Local e := Eachin enemies
+				If(checkCollision(e, proj))
+					removed = True
+					Exit
+				Endif
+			Next
+		Else
+			removed = checkCollision(player, proj)
+		Endif
+		Return removed
+	End Method
+	
+	Method checkCollision:Bool(target:Plane, proj:Projectile)
+		If(proj.x >= target.x And proj.x <= target.x + target.img.Width() And proj.y >= target.y And proj.y <= target.y + target.img.Height())
+			If(Not target.invincible)
+				target.health -= 5
+			EndIf
+			projectiles.Remove(proj)
+			Return True
+		Endif
+		Return false
+	End Method
+	
+	Method RemoveDeadPlanes:Void()
+		' Remove dead enemy planes
+		For Local e := Eachin enemies
+			If(e.health <= 0)
+				enemies.Remove(e)
+			EndIf
+		Next
+		
+		If(player.health <= 0)
+			playerlifes -= 1
+			player.health = 10
+			' TODO: If player is dead, make it uncontrollable for some time
+		EndIf
+	End Method
+	
+	Method ProceedNextWave:Void()
+		Local w:Wave = waves.ToArray()[waveIndex] 'waves.Get(waveIndex)
+		Local index:Int = 0
+		For Local i := Eachin w.enemies.Keys()
+			Repeat
+				Local e:EnemyPlane = New EnemyPlane()
+				e.SetPosition(Rnd(20, DeviceWidth() - 20), 0)
+				e.SetVelocity(0, 1)
+				enemies.AddLast(e)
+				index += 1
+			Until index >= i - 1
+			index = 0
+		Next
+		waveIndex += 1
+	End Method
+End Class

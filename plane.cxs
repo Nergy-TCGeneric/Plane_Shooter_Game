@@ -1,0 +1,14 @@
+strict
+
+Import entity
+
+Class Plane Extends Entity
+
+	Field health:Int
+	Field lastfire:Int = 0 ' For representing millisecond
+	Field invincible:Bool = False
+	
+	' Need to create some 'abstract' methods.
+	Method Init:Void() Abstract
+	Method CanShoot:Bool() Abstract
+End Class

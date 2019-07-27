@@ -1,0 +1,59 @@
+Strict
+
+Import mojo
+Import levelloader
+
+Function Main:Int()
+	New ShootingGame()
+	Return 0
+End Function
+
+Class ShootingGame Extends App
+
+	Global assetmgr:AssetManager
+	Field level:Level
+
+	Method OnCreate:Int()
+		assetmgr = New AssetManager()
+		level = New LevelLoader().LoadLevel(3)
+		level.InitializeEntities()
+		Return 0
+	End Method
+	
+	Method OnUpdate:Int()
+		level.Update()
+		If(level.CanWin())
+			Print("You win!")
+			' TODO: Change it to next level
+		Endif
+		If(level.playerlifes < 1)
+			Print("You lose!")
+			level.player = Null ' Intentionally crashes the game
+		EndIf
+		Return 0
+	End Method
+	
+	Method OnRender:Int()
+		Cls(128, 255, 255) ' Stub - replace with actual background
+		level.Render()
+		Return 0
+	End Method
+End Class
+
+Class AssetManager
+	
+	Global planeimg:Image
+	Global enemyplaneimg:Image
+	Global player_projectile:Image
+	Global enemy_projectile:Image
+	Global background:Image
+	' Field explosion_animation:Image[] - add it later when available
+	
+	Method New()
+		background = LoadImage("SimpleBackground.png")
+		planeimg = LoadImage("playerjet.png")
+		enemyplaneimg = LoadImage("enemyjet.png")
+		player_projectile = LoadImage("playerProjectile.png")
+		enemy_projectile = LoadImage("enemyProjectile.png")
+	End Method
+End Class

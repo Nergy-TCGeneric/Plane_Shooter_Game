@@ -1,0 +1,27 @@
+Strict
+
+Import level
+Import enemyplane
+Import wave
+
+Class LevelLoader
+	Method LoadLevel:Level(playerlifes:Int)
+		' Load stub levels at here. if necessary, hardcode level values
+		' TODO: How about introduce a class 'wave', that stores which enemies will be spawned, in every interval.
+		
+		#Rem
+		Local enemyList:List<EnemyPlane> = New List<EnemyPlane>
+		enemyList.AddLast(New EnemyPlane())
+		enemyList.AddLast(New EnemyPlane())
+		enemyList.AddLast(New EnemyPlane())
+		#End
+		Local wavelist:List<Wave> = New List<Wave>
+		Local wave1:Wave = New Wave(2)
+		wave1.AddEnemyWave(New EnemyPlane(), 5)
+		Local wave2:Wave = New Wave(3)
+		wave2.AddEnemyWave(New EnemyPlane(), 9)
+		wavelist.AddLast(wave1)
+		wavelist.AddLast(wave2)
+		Return New Level("Test", playerlifes, wavelist)
+	End Method
+End Class

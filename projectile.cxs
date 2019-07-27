@@ -1,0 +1,29 @@
+strict
+
+Import entity
+Import shootinggame
+
+Class Projectile Extends Entity
+
+	Field dmg:Int
+	Field playerfired:Bool
+	
+	Method New(playerfired:Bool)
+		dmg = 5		' Stub code
+		Self.playerfired = playerfired
+		If(playerfired)
+			img = ShootingGame.assetmgr.player_projectile
+		Else
+			img = ShootingGame.assetmgr.enemy_projectile
+		EndIf
+	End Method
+	
+	Method Move:Void()
+		x += velX
+		y += velY
+	End Method
+	
+	Method IsOutOfBound:Bool()
+		Return x <= 0 Or x + img.Width()/2  >= DeviceWidth() Or y <= 0 Or y + img.Height()/2 >= DeviceHeight()
+	End Method
+End Class

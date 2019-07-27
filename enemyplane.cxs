@@ -1,0 +1,38 @@
+Strict
+
+Import shootinggame
+Import entity
+Import plane
+
+Class EnemyPlane Extends Plane
+
+	Public
+	Method New()
+		health = 10 ' This code is stub
+		img = ShootingGame.assetmgr.enemyplaneimg ' This code might produce bug; watch carefully
+	End Method
+	
+	Method CanShoot:Bool()
+		Local now:Int = Millisecs()
+		If(now - lastfire >= 1500)
+			lastfire = now
+			Return True
+		Else
+			Return False
+		EndIf
+	End Method
+	
+	Method Move:Void()
+		x += velX
+		y += velY
+		
+		If(y < -img.Height() Or y >= DeviceHeight())
+			y = - img.Height()
+		Endif
+		If(x <= 0)
+			x = 0
+		Elseif(x >= DeviceWidth() - img.Width())
+			x = DeviceWidth() - img.Width()
+		EndIf
+	End Method
+End Class
