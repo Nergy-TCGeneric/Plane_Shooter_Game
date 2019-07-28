@@ -9,7 +9,7 @@ Class EnemyPlane Extends Plane
 	Public
 	Method New()
 		health = 10 ' This code is stub
-		img = ShootingGame.assetmgr.enemyplaneimg ' This code might produce bug; watch carefully
+		img = ShootingGame.assetmgr.enemyplaneimg
 	End Method
 	
 	Method CanShoot:Bool()
@@ -26,8 +26,8 @@ Class EnemyPlane Extends Plane
 		x += velX
 		y += velY
 		
-		If(y < -img.Height() Or y >= DeviceHeight())
-			y = - img.Height()
+		If(y < -img.Height() * 2 Or y >= DeviceHeight())
+			y = - img.Height() * 2
 		Endif
 		If(x <= 0)
 			x = 0

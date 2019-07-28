@@ -12,31 +12,62 @@ Class ShootingGame Extends App
 
 	Global assetmgr:AssetManager
 	Field level:Level
+	Field levelidx:Int = 1
+	Field y:Int = -480
 
 	Method OnCreate:Int()
+		SetUpdateRate(60)
 		assetmgr = New AssetManager()
-		level = New LevelLoader().LoadLevel(3)
-		level.InitializeEntities()
+		level = New LevelLoader().LoadLevel(3, levelidx, DeviceWidth()/2, DeviceHeight()/2, 0)
+		HideMouse()
 		Return 0
 	End Method
 	
 	Method OnUpdate:Int()
-		level.Update()
-		If(level.CanWin())
-			Print("You win!")
-			' TODO: Change it to next level
+		y += 1
+		If(y > 0)
+			y = -480
 		Endif
-		If(level.playerlifes < 1)
-			Print("You lose!")
-			level.player = Null ' Intentionally crashes the game
-		EndIf
+		
+		level.Update()
 		Return 0
 	End Method
 	
 	Method OnRender:Int()
-		Cls(128, 255, 255) ' Stub - replace with actual background
+		Cls(0, 0, 0)
+		DrawImage(assetmgr.bg, 0, y)
 		level.Render()
+		For Local i:=0 Until level.playerlifes
+			DrawImage(assetmgr.player_life, 24 * i, 0)
+		Next
+		DrawText("Score : " + level.score, 0, DeviceHeight()-10)
+		checkWinOrLose()
 		Return 0
+	End Method
+	
+	Private
+	Method checkWinOrLose:Void()
+		If(level.CanWin())
+			levelidx += 1
+			If(levelidx <= 4)
+				Local previouslifes:Int = level.playerlifes
+				Local x := level.player.x
+				Local y := level.player.y
+				Local score := level.score
+				level = New LevelLoader().LoadLevel(previouslifes, levelidx, x, y, score)
+			Else
+				Cls(0, 0, 0)
+				DrawText("Congratulations! You nailed it!", DeviceWidth()/2, DeviceHeight()/2, 0.5, 0.5)
+				DrawText("Total score is " + level.score, DeviceWidth()/2, DeviceHeight()/2+10, 0.5, 0.5)
+				EndApp()
+			EndIf
+		Endif
+		If(level.playerlifes < 1)
+			Cls(0, 0, 0)
+			DrawText("Whoops.. Villians took over the galaxy! Maybe we need to wait until a new savior comes...", DeviceWidth()/2, DeviceHeight()/2, 0.5, 0.5)
+			DrawText("Total score is " + level.score, DeviceWidth()/2, DeviceHeight()/2+10, 0.5, 0.5)
+			EndApp()
+		EndIf
 	End Method
 End Class
 
@@ -46,14 +77,35 @@ Class AssetManager
 	Global enemyplaneimg:Image
 	Global player_projectile:Image
 	Global enemy_projectile:Image
-	Global background:Image
-	' Field explosion_animation:Image[] - add it later when available
+	Global bg:Image
+	Global player_life:Image
+	Global dead_explosion:Image[] = New Image[7]
+	Global hit_explosion:Image[] = New Image[7]
+	
+	Global weapon_fire:Sound
+	Global enemy_fire:Sound
+	Global player_hit:Sound
+	Global plane_dead:Sound
+	Global enemy_dead:Sound
 	
 	Method New()
-		background = LoadImage("SimpleBackground.png")
+		bg = LoadImage("bg.png")
 		planeimg = LoadImage("playerjet.png")
 		enemyplaneimg = LoadImage("enemyjet.png")
 		player_projectile = LoadImage("playerProjectile.png")
 		enemy_projectile = LoadImage("enemyProjectile.png")
+		player_life = LoadImage("lifes.png")
+		weapon_fire = LoadSound("weapon_sound.mp3")
+		enemy_fire = LoadSound("enemy_sound.mp3")
+		player_hit = LoadSound("player_hit.mp3")
+		plane_dead = LoadSound("dead_sound.mp3")
+		enemy_dead = LoadSound("enemy_hit.mp3")
+		
+		Local dexp_texture := LoadImage("dead_explosion.png")
+		Local hexp_texture := LoadImage("hit_explosion.png")
+		For Local i:=0 Until 7
+			dead_explosion[i] = dexp_texture.GrabImage(33 * i, 0, 33, 30)
+			hit_explosion[i] = hexp_texture.GrabImage(24 * i, 0, 24, 24)
+		Next
 	End Method
 End Class

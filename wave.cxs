@@ -3,15 +3,17 @@ Strict
 Import enemyplane
 
 Class Wave
-	Field enemies:IntMap<EnemyPlane>
-	Field spawninterval:Int
+	' Field enemies:IntMap<EnemyPlane>
+	Field enemies:List<EnemyPlane>
+	Field spawninterval:Float
 	
 	Method New(interval:Int) ' Note that the interval is 'second'
-		enemies = New IntMap<EnemyPlane>
+		enemies = New List<EnemyPlane>
 		spawninterval = interval * 1000
 	End Method
 	
-	Method AddEnemyWave:Void(enemy:EnemyPlane, amount:Int)
-		enemies.Add(amount, enemy)
+	Method AddEnemyWave:Void(enemy:EnemyPlane, xloc:Int)
+		enemy.SetPosition(xloc, -enemy.img.Height())
+		enemies.AddLast(enemy)
 	End Method
 End Class

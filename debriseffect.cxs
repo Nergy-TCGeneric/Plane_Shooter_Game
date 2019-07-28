@@ -1,0 +1,38 @@
+Import mojo.graphics
+Import shootinggame
+
+Class DebrisEffect
+	Field x:Float
+	Field y:Float
+	Field type:Int
+	Field rc:Int = 0 ' Referenced count
+	Field deletable:Bool = False
+	
+	Method New(x:Float, y:Float, type:Int)
+		Self.x = x
+		Self.y = y
+		Self.type = type
+	End Method
+	
+	'Needs strategy design pattern here, but at this time ignored it.
+	Method Render:Void()
+		Local animation:Image[]
+		If(type = DEAD_EXPLOSION)
+			animation = ShootingGame.assetmgr.dead_explosion
+		Elseif(type = HIT_EXPLOSION)
+			animation = ShootingGame.assetmgr.hit_explosion
+		Endif
+		
+		rc += 1
+		Local i = Int(rc / 6) ' 1000 : 60 = 100(~= 700/7) : x (UpdateRate)
+		If(i > animation.Length() - 1)
+			deletable = True
+		Else
+			DrawImage(animation[i], x, y)
+		EndIf
+	End Method
+End Class
+
+Enumerate
+	DEAD_EXPLOSION,
+	HIT_EXPLOSION

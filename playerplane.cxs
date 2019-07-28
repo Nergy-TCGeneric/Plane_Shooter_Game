@@ -6,15 +6,18 @@ Import entity
 
 Class PlayerPlane Extends Plane
 	
+	Field uncontrollable:Bool = False
+	Field ust:Int = 0 ' Uncontrollability setted time
+	
 	Public
 	Method New()
 		health = 10 ' This code is stub
-		img = ShootingGame.assetmgr.planeimg ' This code might produce bug - watch carefully.
+		img = ShootingGame.assetmgr.planeimg
 	End Method
 	
 	Method CanShoot:Bool()
 		Local now:Int = Millisecs()
-		If(now - lastfire >= 200)
+		If(now - lastfire >= 150 And Not uncontrollable)
 			lastfire = now
 			Return True
 		Else
@@ -23,7 +26,32 @@ Class PlayerPlane Extends Plane
 	End Method
 	
 	Method Move:Void()
-		x = TouchX(0) - img.Width()/2
-		y = TouchY(0) - img.Height()/2
+		If(Not uncontrollable)
+			If(KeyDown(KEY_UP))
+				y -= 4.5
+			Endif
+			If(KeyDown(KEY_DOWN))
+				y += 4.5
+			Endif
+			If(KeyDown(KEY_LEFT))
+				x -= 4.5
+			Endif
+			If(KeyDown(KEY_RIGHT))
+				x += 4.5
+			EndIf
+		Endif
+		
+		If(x <= 0)
+			x = 0
+		Endif
+		If(x + img.Width() >= DeviceWidth())
+			x = DeviceWidth() - img.Width()
+		Endif
+		If(y <= 0)
+			y = 0
+		Endif
+		If(y + img.Height() >= DeviceHeight())
+			y = DeviceHeight() - img.Height()
+		EndIf
 	End Method
 End Class

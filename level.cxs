@@ -7,6 +7,7 @@ Import enemyplane
 Import playerplane
 Import projectile
 Import wave
+Import debriseffect
 
 Class Level
 	Field name:String
@@ -15,36 +16,43 @@ Class Level
 	Field player:PlayerPlane
 	Field projectiles:List<Projectile>
 	Field waves:List<Wave>
-	Field waveIndex:Int = 0
+	Field waveindex:Int = 0
 	Field latestspawntime:Int = 0
+	Field debriseffect:List<DebrisEffect>
+	Field score:Int = 0
 	' Field canvas:Canvas
 	
-	Method New(name:String, playerlifes:Int, wave:List<Wave>)
+	Method New(name:String, playerlifes:Int, wave:List<Wave>, x:Int, y:Int, score:Int)
 		Self.name = name
 		Self.playerlifes = playerlifes ' When go to next level, pass this value to preserve player lifes.
 		Self.player = New PlayerPlane()
 		Self.projectiles = New List<Projectile>
 		Self.enemies = New List<EnemyPlane>
 		Self.waves = wave
-	End Method
-	
-	Method InitializeEntities:Void()
-		Seed = Millisecs()
-		player.SetPosition(DeviceWidth() / 2, DeviceHeight() * 4 / 5)
-		For Local e := Eachin enemies
-			e.SetPosition(Rnd(20, DeviceWidth() - 20), 0) ' Assuming Image's width is 40 and has rectangular hitbox.
-			e.SetVelocity(0, 1) ' This code is stub. replace with actual value.
-		Next
+		Self.debriseffect = New List<DebrisEffect>
+		Self.score = score
+		player.SetPosition(x, y)
 	End Method
 	
 	Method Update:Void()
 		Local now:Int = Millisecs()
-		If(waveIndex < waves.Count())
-			If(now - latestspawntime >= waves.ToArray()[waveIndex].spawninterval) ' TODO:  Array Index Out Of Bound Error
+		If(waveindex < waves.Count())
+			If(now - latestspawntime >= waves.ToArray()[waveindex].spawninterval)
 				ProceedNextWave()
 				latestspawntime = now
 			EndIf
 		Endif
+		
+		If(player.uncontrollable)
+			If(now - player.ust >= 3000)
+				player.uncontrollable = False
+				player.SetPosition(DeviceWidth()/2, DeviceHeight())
+			Endif
+		Endif
+		
+		If(now - player.ust >= 5000)
+			player.invincible = False
+		EndIf
 		
 		player.Move()
 		If(enemies.Count() > 0)
@@ -52,19 +60,22 @@ Class Level
 				e.Move()
 				If(e.CanShoot())
 					Local proj:Projectile = New Projectile(false)
-					proj.SetPosition(e.x, e.y)
-					proj.SetVelocity(0, 10) ' This code is stub; replace with actual value
+					proj.SetPosition(e.x+proj.img.Width()+3, e.y + proj.img.Height())
+					proj.SetVelocity(0, 7) ' This code is stub; replace with actual value
 					projectiles.AddLast(proj)
+					PlaySound(ShootingGame.assetmgr.enemy_fire)
 				Endif
+				checkPlaneCollision(player, e)
 			Next
 		Endif
 		
 		If(KeyDown(KEY_SPACE))
 			If(player.CanShoot())
 				Local proj:Projectile = New Projectile(true)
-				proj.SetPosition(player.x, player.y)
+				proj.SetPosition(player.x + proj.img.Width()+3, player.y)
 				proj.SetVelocity(0, -30) ' This code is stub; replace with actual value
 				projectiles.AddLast(proj)
+				PlaySound(ShootingGame.assetmgr.weapon_fire)
 			Endif
 		Endif
 		
@@ -83,20 +94,35 @@ Class Level
 		RemoveDeadPlanes()
 	End Method
 	
-	Method Render:Void() ' TODO: How about separating rendering and updating values? 
+	Method Render:Void()
 		' Move plane entities first(this includes enemy and player) then projectiles.
 		' Read the pre-develop documentation for further details.
+		If(player.uncontrollable)
+			SetAlpha(0)
+		Endif
+		Local now:Int = Millisecs()
+		If(player.invincible And now - player.ust > 3000 And now - player.ust <= 5000)
+			Local i := Int((now - player.ust)/100)
+			SetAlpha(i Mod 2)
+		EndIf 
 		player.Render()
+		SetAlpha(1)
 		For Local e := Eachin enemies
 			e.Render()
 		Next
 		For Local p := Eachin projectiles
 			p.Render()
-		Next		
+		Next
+		For Local e := Eachin debriseffect
+			e.Render()
+			If(e.deletable)
+				debriseffect.Remove(e)
+			EndIf
+		Next
 	End Method
 	
 	Method CanWin:Bool()
-		Return enemies.Count() < 1 And waveIndex = waves.Count()
+		Return enemies.Count() < 1 And waveindex = waves.Count()
 	End Method
 	
 	Private
@@ -111,13 +137,18 @@ Class Level
 			Next
 		Else
 			removed = checkCollision(player, proj)
+			If(removed And Not player.uncontrollable)
+				PlaySound(ShootingGame.assetmgr.player_hit)
+			EndIf
 		Endif
 		Return removed
 	End Method
 	
 	Method checkCollision:Bool(target:Plane, proj:Projectile)
-		If(proj.x >= target.x And proj.x <= target.x + target.img.Width() And proj.y >= target.y And proj.y <= target.y + target.img.Height())
+		Local x_collision := (proj.x <= target.x And proj.x + proj.img.Width() >= target.x) Or (proj.x >= target.x And proj.x <= target.x + target.img.Width())
+		If(x_collision And proj.y >= target.y And proj.y <= target.y + target.img.Height())
 			If(Not target.invincible)
+				debriseffect.AddLast(New DebrisEffect(proj.x, proj.y, HIT_EXPLOSION))
 				target.health -= 5
 			EndIf
 			projectiles.Remove(proj)
@@ -126,34 +157,55 @@ Class Level
 		Return false
 	End Method
 	
+	Method checkPlaneCollision:Void(target:PlayerPlane, victim:EnemyPlane)
+		If(target.uncontrollable)
+			Return
+		Endif
+		Local x_collision := (target.x <= victim.x And target.x + target.img.Width() >= victim.x) Or (target.x >= victim.x And target.x <= victim.x + victim.img.Width())
+		If(x_collision And target.y >= victim.y And target.y <= victim.y + victim.img.Height())
+			If(Not victim.invincible)
+				debriseffect.AddLast(New DebrisEffect(victim.x, victim.y, DEAD_EXPLOSION))
+				enemies.Remove(victim)
+			Endif
+			If(Not target.invincible)
+				HandlePlayerDeath()
+			Endif
+		Endif
+	End Method
+	
 	Method RemoveDeadPlanes:Void()
 		' Remove dead enemy planes
 		For Local e := Eachin enemies
 			If(e.health <= 0)
+				PlaySound(ShootingGame.assetmgr.enemy_dead)
+				debriseffect.AddLast(New DebrisEffect(e.x, e.y, DEAD_EXPLOSION))
+				score += 100
 				enemies.Remove(e)
 			EndIf
 		Next
 		
 		If(player.health <= 0)
-			playerlifes -= 1
-			player.health = 10
-			' TODO: If player is dead, make it uncontrollable for some time
+			HandlePlayerDeath()
 		EndIf
 	End Method
 	
 	Method ProceedNextWave:Void()
-		Local w:Wave = waves.ToArray()[waveIndex] 'waves.Get(waveIndex)
-		Local index:Int = 0
-		For Local i := Eachin w.enemies.Keys()
-			Repeat
-				Local e:EnemyPlane = New EnemyPlane()
-				e.SetPosition(Rnd(20, DeviceWidth() - 20), 0)
-				e.SetVelocity(0, 1)
-				enemies.AddLast(e)
-				index += 1
-			Until index >= i - 1
-			index = 0
+		Local w:Wave = waves.ToArray()[waveindex]
+		For Local e:= Eachin w.enemies
+			e.SetVelocity(0, 1)
+			enemies.AddLast(e)
 		Next
-		waveIndex += 1
+		waveindex += 1
+	End Method
+	
+	Method HandlePlayerDeath:Void()
+		PlaySound(ShootingGame.assetmgr.plane_dead)
+		debriseffect.AddLast(New DebrisEffect(player.x, player.y, DEAD_EXPLOSION))
+		playerlifes -= 1
+		player.health = 10
+		player.uncontrollable = True
+		player.invincible = True
+		score /= 2
+		player.ust = Millisecs()
 	End Method
 End Class

@@ -21,6 +21,7 @@ Class Entity
 	
 	Method Render:Void()
 		DrawImage(img, x, y)
+		' DrawRect(x, y, 64, 64) - For checking hitboxes
 	End Method
 	
 	Method Move:Void() Abstract

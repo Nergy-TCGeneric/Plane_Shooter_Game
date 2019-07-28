@@ -5,23 +5,67 @@ Import enemyplane
 Import wave
 
 Class LevelLoader
-	Method LoadLevel:Level(playerlifes:Int)
+	Method LoadLevel:Level(playerlifes:Int, levelidx:Int, x:Int, y:Int, score:Int)
 		' Load stub levels at here. if necessary, hardcode level values
 		' TODO: How about introduce a class 'wave', that stores which enemies will be spawned, in every interval.
-		
-		#Rem
-		Local enemyList:List<EnemyPlane> = New List<EnemyPlane>
-		enemyList.AddLast(New EnemyPlane())
-		enemyList.AddLast(New EnemyPlane())
-		enemyList.AddLast(New EnemyPlane())
-		#End
 		Local wavelist:List<Wave> = New List<Wave>
-		Local wave1:Wave = New Wave(2)
-		wave1.AddEnemyWave(New EnemyPlane(), 5)
-		Local wave2:Wave = New Wave(3)
-		wave2.AddEnemyWave(New EnemyPlane(), 9)
-		wavelist.AddLast(wave1)
-		wavelist.AddLast(wave2)
-		Return New Level("Test", playerlifes, wavelist)
+		Select(levelidx)
+			Case 1
+				wavelist.AddLast(GenerateRandomSquadWave(0, 10, 80, [1, 1, 1], 2.0))
+				wavelist.AddLast(GenerateRandomSquadWave(400, 500, 80, [1, 1, 1], 2.0))
+				wavelist.AddLast(GenerateRandomSquadWave(200, 300, 80, [1, 1, 1], 2.0))
+			Case 2
+				For Local w := Eachin GenerateVerticalRandomSquadWave(0, 50, 80, [1,0,1,0,1,0,1], 2, 1)
+					wavelist.AddLast(w)
+				Next
+				For Local w := Eachin GenerateVerticalRandomSquadWave(200, 50, 80, [1,0,1,0,1,0,1], 1, 2)
+					wavelist.AddLast(w)
+				Next
+				For Local w := Eachin GenerateVerticalRandomSquadWave(400, 50, 80, [1,0,1,0,1,0,1], 2, 2)
+					wavelist.AddLast(w)
+				Next
+			Case 3
+				wavelist.AddLast(GenerateRandomSquadWave(0, 10, 80, [1, 1, 1, 1, 1, 1, 1, 1, 1], 2.0))
+				wavelist.AddLast(GenerateRandomSquadWave(100, 150, 80, [1, 1, 1, 1, 1, 1, 1, 1, 1], 2.0))
+				wavelist.AddLast(GenerateRandomSquadWave(0, 10, 80, [1, 1, 1, 1, 1, 1, 1, 1, 1], 6.0))
+				wavelist.AddLast(GenerateRandomSquadWave(100, 150, 80, [1, 1, 1, 1, 1, 1, 1, 1, 1], 2.0))
+			Case 4
+				wavelist.AddLast(GenerateRandomSquadWave(0, 300, 80, [1, 1, 0, 1, 1], 2.0))
+				wavelist.AddLast(GenerateRandomSquadWave(300, 400, 80, [1, 1, 0, 1, 1], 2.0))
+				For Local w:= Eachin GenerateVerticalRandomSquadWave(0, 100, 80, [1, 1, 1, 1, 1], 4, 2.0)
+					wavelist.AddLast(w)
+				Next
+		End Select
+		Return New Level("Test", playerlifes, wavelist, x, y, score)
 	End Method
 End Class
+
+Function GenerateRandomSquadWave:Wave(min:Int, max:Int, dist:Int, data:Int[], spawninterval:Float)
+	' Given data format is like : [0, 1, 1, 1, 1, 0]
+	' 1 means that enemy airplane will spawn that position. 0 means opposite.
+	Seed = Millisecs()
+	Local tempwave:Wave = New Wave(spawninterval)
+	Local spawn_dist := Rnd(min, max)
+	For Local idx:Int = 0 Until data.Length()
+		If(data[idx])
+			tempwave.AddEnemyWave(New EnemyPlane(), spawn_dist + dist * idx)
+		Endif
+	Next
+	Return tempwave
+End Function
+
+Function GenerateVerticalRandomSquadWave:List<Wave>(min:Int, max:Int, dist:Int, data:Int[], vertlen:Int, spawninterval:Float)
+	Seed = Millisecs()
+	Local wavelist:List<Wave> = New List<Wave>
+	Local spawn_dist := Rnd(min, max)
+	For Local i:Int = 0 Until vertlen
+		Local tempwave:Wave = New Wave(spawninterval)
+		For Local idx:Int = 0 Until data.Length()
+			If(data[idx])
+				tempwave.AddEnemyWave(New EnemyPlane(), spawn_dist + dist * idx)
+			Endif
+		Next
+		wavelist.AddLast(tempwave)
+	Next
+	Return wavelist
+End Function

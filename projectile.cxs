@@ -24,6 +24,6 @@ Class Projectile Extends Entity
 	End Method
 	
 	Method IsOutOfBound:Bool()
-		Return x <= 0 Or x + img.Width()/2  >= DeviceWidth() Or y <= 0 Or y + img.Height()/2 >= DeviceHeight()
+		Return x + img.Width() <= 0 Or x >= DeviceWidth() Or y + img.Height() <= 0 Or y >= DeviceHeight()
 	End Method
 End Class
